@@ -14,6 +14,7 @@ aura_env.healingSpells = {
     [207778] = true, -- Downpour
     [320746] = true, -- Surge of Earth
     [5394] = true, -- Healing Stream Totem
+    [108281] = true, -- Ancestral Guidance
 }
 
 aura_env.damageSpells = {
