@@ -15,6 +15,8 @@ aura_env.healingSpells = {
     [320746] = true, -- Surge of Earth
     [5394] = true, -- Healing Stream Totem
     [108281] = true, -- Ancestral Guidance
+    [201764] = true, -- Recall Cloudburst Totem
+    [77130] = true, -- Purify Spirit
 }
 
 aura_env.damageSpells = {
@@ -25,7 +27,6 @@ aura_env.damageSpells = {
     [117014] = true, -- Elemental Blast
     [320125] = true, -- Echoing Shock
     [192222] = true, -- Liquid Magma Totem
-    [191634] = true, -- Stormkeeper
     [210714] = true, -- Icefury
     [51490] = true, -- Thunderstorm
     [61882] = true, -- Earthquake
@@ -37,6 +38,9 @@ aura_env.damageSpells = {
     [196884] = true, -- Feral Lunge
     [197214] = true, -- Sundering
     [188089] = true, -- Earthen Spike
+    [73899] = true, -- Primal Strike
+    [8042] = true, -- Earth Shock
+    [342243] = true, -- Static Discharge
 }
 
 -------------------------------------------------------------------------------
