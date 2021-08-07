@@ -17,6 +17,7 @@ aura_env.healingSpells = {
     [108281] = true, -- Ancestral Guidance
     [201764] = true, -- Recall Cloudburst Totem
     [77130] = true, -- Purify Spirit
+    [312411] = true, -- Bag of Tricks (Vulpera racial)
 }
 
 aura_env.damageSpells = {
