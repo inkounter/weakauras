@@ -10,13 +10,55 @@ aura_env.customNames = {
     [382] = aura_env.config.theater
 }
 
+aura_env.getKeystoneInfoFromItemLink = function(itemLink)
+    -- Return the map ID and level of the specified keystone 'itemLink'.  If
+    -- 'itemLink' is not a keystone item link, return 'nil'.
+
+    if itemLink == nil then
+        return
+    end
+
+    local mapId, level = select(3, itemLink:find("|Hkeystone:180653:(%d+):(%d+):"))
+
+    if mapId == nil then
+        local bonusIds = select(3, itemLink:find("|Hitem:180653:(.+)"))
+        if bonusIds == nil then
+            return
+        end
+
+        local _
+        mapId, _, level = select(15, strsplit(":", bonusIds))
+
+        if mapId == nil then
+            return
+        end
+    end
+
+    return tonumber(mapId), tonumber(level)
+end
+
 -- trigger: BAG_UPDATE_DELAYED, CHALLENGE_MODE_START, CHALLENGE_MODE_COMPLETED, WA_DEFERRED_KEYSTONE_CHECK, ITEM_CHANGED, OPTIONS
 function(event, ...)
-    if event == "CHALLENGE_MODE_COMPLETED" or event == "ITEM_CHANGED" then
+    local aura_env = aura_env
+
+    if event == "CHALLENGE_MODE_COMPLETED" then
         -- The keystone changes after this event is fired. Schedule an update.
 
         C_Timer.After(1, function() WeakAuras.ScanEvents("WA_DEFERRED_KEYSTONE_CHECK") end)
         return false
+    elseif event == "ITEM_CHANGED" then
+        -- Parse the keystone info, if any, from the new item link.
+
+        local newItemLink = select(2, ...)
+        local mapId, level = aura_env.getKeystoneInfoFromItemLink(newItemLink)
+
+        if mapId == nil then
+            return false
+        end
+
+        aura_env.keystoneMapId, aura_env.keystoneLevel = mapId, level
+
+        return true
     else
         local previousKeystoneMapId = aura_env.keystoneMapId
         local previousKeystoneLevel = aura_env.keystoneLevel
