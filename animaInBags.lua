@@ -135,8 +135,10 @@ end
 function()
     for i = 1,3 do
         local frame = _G["ElvUI_ContainerFrameCurrencyButton" .. i]
-        if frame.currencyID == 1813 then
+        if frame ~= nil and frame.currencyID == 1813 then
             return frame
         end
     end
+
+    return UIParent
 end
