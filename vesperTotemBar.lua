@@ -44,56 +44,87 @@ aura_env.damageSpells = {
     [342243] = true, -- Static Discharge
 }
 
+aura_env.healingCharges = 0
+aura_env.damageCharges = 0
+
 -------------------------------------------------------------------------------
 -- TSU: UNIT_SPELLCAST_SUCCEEDED:player, PLAYER_TOTEM_UPDATE
 
 function(allstates, event, ...)
-    local state = allstates[1]
-
     if event == "UNIT_SPELLCAST_SUCCEEDED" then
         local spellId = select(3, ...)
 
         if spellId == 324386 then   -- Vesper Totem
-            if state == nil then
-                state = {}
-                allstates[1] = state
+
+            local expirationTime = GetTime() + 30
+
+            for i = 1, 6 do
+                local chargeType
+                local chargeNum
+                local sortIndex
+
+                if i < 4 then
+                    chargeType = "damage"
+                    chargeNum = i
+                    sortIndex = -chargeNum
+                else
+                    chargeType = "healing"
+                    chargeNum = i - 3
+                    sortIndex = chargeNum
+                end
+
+                local stateKey = chargeType .. chargeNum
+
+                local state = {
+                    ["show"] = true,
+                    ["changed"] = true,
+                    ["progressType"] = "timed",
+                    ["autoHide"] = true,
+                    ["expirationTime"] = expirationTime,
+                    ["duration"] = 30,
+                    ["index"] = sortIndex,
+
+                    ["chargeType"] = chargeType,
+                }
+
+                allstates[stateKey] = state
             end
 
-            state.show = true
-            state.changed = true
-            state.progressType = "timed"
-            state.autoHide = true
-            state.expirationTime = GetTime() + 30
-            state.duration = 30
-
-            state.healingCharges = 3
-            state.damageCharges = 3
+            aura_env.healingCharges = 3
+            aura_env.damageCharges = 3
 
             return true
-        elseif state ~= nil and state.show then
+        elseif aura_env.healingCharges > 0 or aura_env.damageCharges > 0 then
             if aura_env.healingSpells[spellId] then
-                if state.healingCharges > 0 then
-                    state.healingCharges = state.healingCharges - 1
+                if aura_env.healingCharges > 0 then
+                    local index = "healing" .. aura_env.healingCharges
+                    local state = allstates[index]
+
+                    state.show = false
                     state.changed = true
+
+                    aura_env.healingCharges = aura_env.healingCharges - 1
+
+                    return true
                 end
             elseif aura_env.damageSpells[spellId] then
-                if state.damageCharges > 0 then
-                    state.damageCharges = state.damageCharges - 1
-                    state.changed = true
-                end
-            end
+                if aura_env.damageCharges > 0 then
+                    local index = "damage" .. aura_env.damageCharges
+                    local state = allstates[index]
 
-            if state.changed then
-                if state.healingCharges == 0 and state.damageCharges == 0 then
                     state.show = false
-                end
+                    state.changed = true
 
-                return true
+                    aura_env.damageCharges = aura_env.damageCharges - 1
+
+                    return true
+                end
             end
 
             return false
         end
-    elseif event == "PLAYER_TOTEM_UPDATE" and state ~= nil and state.show then
+    elseif event == "PLAYER_TOTEM_UPDATE"
+    and (aura_env.healingCharges > 0 or aura_env.damageCharges > 0) then
         -- Check for "PLAYER_TOTEM_UPDATE" in case the player cancels the
         -- totem.
 
@@ -108,10 +139,17 @@ function(allstates, event, ...)
             end
         end
 
-        -- Vesper Totem is inactive.  Disable the state.
+        -- Vesper Totem is inactive.  Disable all of the states.
 
-        state.show = false
-        state.changed = true
+        for index, state in pairs(allstates) do
+            state.show = false
+            state.changed = true
+        end
+
+        -- Clear the charge counters.
+
+        aura_env.healingCharges = 0
+        aura_env.damageCharges = 0
 
         return true
     end
@@ -124,6 +162,45 @@ end
     ["expirationTime"] = true,
     ["duration"] = true,
 
-    ["healingCharges"] = "number",
-    ["damageCharges"] = "number",
+    ["chargeType"] = {
+        ["display"] = "Charge Type",
+        ["type"] = "select",
+        ["values"] = {
+            ["damage"] = "Damage",
+            ["healing"] = "Healing",
+        },
+    },
 }
+
+-------------------------------------------------------------------------------
+-- Custom Grow
+
+function(positions, activeRegions)
+    -- This grow algorithm places each region such that damage charges are
+    -- always to the right of (0, 0), and healing charges are always to the
+    -- left of (0, 0).  This has the visual effect of damage charges "growing
+    -- right" and healing charges "growing left".
+
+    for i, regionData in ipairs(activeRegions) do
+        local region = regionData.region
+        local index = region.state.index
+
+        if index == nil then
+            return
+        end
+
+        local sign = index > 0 and 1 or -1
+
+        if false then
+            positions[i] = {
+                0,
+                (index - sign / 2) * (region:GetHeight() + 1)
+            }
+        else
+            positions[i] = {
+                (index - sign / 2) * (region:GetWidth() + 1),
+                0
+            }
+        end
+    end
+end
