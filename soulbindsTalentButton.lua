@@ -42,9 +42,16 @@ function(event)
     end
 
     local soulbindId = C_Soulbinds.GetActiveSoulbindID()
-    local soulbindData = C_Soulbinds.GetSoulbindData(soulbindId)
+    local modelId
 
-    model:SetDisplayInfo(soulbindData.modelSceneData.creatureDisplayInfoID)
+    if soulbindId == 0 then
+        modelId = 46720
+    else
+        local soulbindData = C_Soulbinds.GetSoulbindData(soulbindId)
+        modelId = soulbindData.modelSceneData.creatureDisplayInfoID
+    end
+
+    model:SetDisplayInfo(modelId)
 
     return true
 end
