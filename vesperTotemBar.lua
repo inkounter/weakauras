@@ -181,6 +181,15 @@ function(positions, activeRegions)
     -- left of (0, 0).  This has the visual effect of damage charges "growing
     -- right" and healing charges "growing left".
 
+    local firstRegion = activeRegions[1]
+    if firstRegion == nil then
+        return
+    end
+
+    local config = firstRegion.data.config
+    local growVertically = config.growVertically
+    local spacing = config.spacing
+
     for i, regionData in ipairs(activeRegions) do
         local region = regionData.region
         local index = region.state.index
@@ -191,14 +200,14 @@ function(positions, activeRegions)
 
         local sign = index > 0 and 1 or -1
 
-        if false then
+        if growVertically then
             positions[i] = {
                 0,
-                (index - sign / 2) * (region:GetHeight() + 1)
+                (index - sign / 2) * (region:GetHeight() + spacing)
             }
         else
             positions[i] = {
-                (index - sign / 2) * (region:GetWidth() + 1),
+                (index - sign / 2) * (region:GetWidth() + spacing),
                 0
             }
         end
