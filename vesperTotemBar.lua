@@ -176,10 +176,10 @@ end
 -- Custom Grow
 
 function(positions, activeRegions)
-    -- This grow algorithm places each region such that damage charges are
-    -- always to the right of (0, 0), and healing charges are always to the
-    -- left of (0, 0).  This has the visual effect of damage charges "growing
-    -- right" and healing charges "growing left".
+    -- This grow algorithm places each region such that damage charges "grow
+    -- right" from (0, 0), and healing charges "grow left" from (0, 0).  Custom
+    -- Options can also reconfigure this algorithm to inverse the directions
+    -- and to grow vertically instead of horizontally.
 
     local firstRegion = activeRegions[1]
     if firstRegion == nil then
@@ -188,6 +188,7 @@ function(positions, activeRegions)
 
     local config = firstRegion.data.config
     local growVertically = config.growVertically
+    local inverse = config.inverse
     local spacing = config.spacing
 
     for i, regionData in ipairs(activeRegions) do
@@ -199,6 +200,11 @@ function(positions, activeRegions)
         end
 
         local sign = index > 0 and 1 or -1
+
+        if inverse then
+            index = -index
+            sign = -sign
+        end
 
         if growVertically then
             positions[i] = {
