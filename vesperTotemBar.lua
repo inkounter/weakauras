@@ -181,12 +181,7 @@ function(positions, activeRegions)
     -- Options can also reconfigure this algorithm to inverse the directions
     -- and to grow vertically instead of horizontally.
 
-    local firstRegion = activeRegions[1]
-    if firstRegion == nil then
-        return
-    end
-
-    local config = firstRegion.data.config
+    local config = aura_env.child_envs[1].config
     local growVertically = config.growVertically
     local inverse = config.inverse
     local spacing = config.spacing
