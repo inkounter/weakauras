@@ -66,9 +66,10 @@ function(event, ...)
         aura_env.keystoneMapId = C_MythicPlus.GetOwnedKeystoneChallengeMapID()
         aura_env.keystoneLevel = C_MythicPlus.GetOwnedKeystoneLevel()
 
-        return (event == "OPTIONS"
-            or aura_env.keystoneMapId ~= previousKeystoneMapId
-            or aura_env.keystoneLevel ~= previousKeystoneLevel)
+        return (aura_env.keystoneMapId ~= nil
+                and (event == "OPTIONS"
+                        or aura_env.keystoneMapId ~= previousKeystoneMapId
+                        or aura_env.keystoneLevel ~= previousKeystoneLevel))
     end
 end
 
