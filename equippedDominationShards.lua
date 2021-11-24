@@ -92,7 +92,7 @@ aura_env.getSocketedShardItemId = function(itemLink)
 end
 
 -------------------------------------------------------------------------------
--- TSU: UNIT_INVENTORY_CHANGED:player
+-- TSU: UNIT_INVENTORY_CHANGED:player, PLAYER_EQUIPMENT_CHANGED
 
 function(allstates, event, ...)
     for _, state in pairs(allstates) do
