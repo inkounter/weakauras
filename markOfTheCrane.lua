@@ -1,8 +1,6 @@
 -------------------------------------------------------------------------------
 -- init
 
-aura_env.myGuid = UnitGUID("player")
-
 aura_env.latestStates = {}  -- an array of the 5 states with the latest
                             -- expiration times, where the state at index 5 is
                             -- the closest to expiring.
@@ -11,8 +9,9 @@ aura_env.latestStates = {}  -- an array of the 5 states with the latest
 -- TSU: CLEU:SPELL_DAMAGE
 
 function(allstates, event, ...)
-    local sourceGuid = select(4, ...)
-    if sourceGuid ~= aura_env.myGuid then
+    local sourceFlags = select(6, ...)
+    if sourceFlags == nil
+    or bit.band(sourceFlags, COMBATLOG_OBJECT_AFFILIATION_MINE) == 0 then
         return false
     end
 
