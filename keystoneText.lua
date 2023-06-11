@@ -1,14 +1,9 @@
 -- init
-aura_env.customNames = {
-    [375] = aura_env.config.mists,
-    [376] = aura_env.config.wake,
-    [377] = aura_env.config.side,
-    [378] = aura_env.config.halls,
-    [379] = aura_env.config.plague,
-    [380] = aura_env.config.depths,
-    [381] = aura_env.config.spires,
-    [382] = aura_env.config.theater
-}
+aura_env.nicknames = {}
+
+for _, entry in pairs(aura_env.config.nicknames) do
+    aura_env.nicknames[entry.challengeMapId] = entry.nickname
+end
 
 aura_env.getKeystoneInfoFromItemLink = function(itemLink)
     -- Return the map ID and level of the specified keystone 'itemLink'.  If
@@ -80,8 +75,9 @@ end
 
 -- name
 function()
-    local name = aura_env.customNames[aura_env.keystoneMapId]
-    if name == "" then
+    local name = aura_env.nicknames[aura_env.keystoneMapId]
+
+    if name == nil or name == "" then
         name = C_ChallengeMode.GetMapUIInfo(aura_env.keystoneMapId)
     end
 
