@@ -1,3 +1,11 @@
+--[[
+A small text that shows how many Devouring Plagues you've cast while in
+Voidform. Upon expiration/removal of Voidform, this also prints a message to
+your chat window the final Devouring Plague cast count. This message can be
+modified or disabled in "Actions" -> "On Hide". See "Trigger" -> "Custom
+Variables" for the available variables.
+]]
+
 -- TSU: UNIT_SPELLCAST_SUCCEEDED:player, UNIT_AURA:player
 
 function(allstates, event, ...)
