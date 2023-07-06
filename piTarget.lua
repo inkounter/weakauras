@@ -2,9 +2,9 @@
 function(event)
     local macroName = "Void Eruption"
     local macroBody = GetMacroBody(macroName)
-    local targetBegin, targetEnd = string.find(macroBody, "@[^@]+]Power")
+    local targetBegin, targetEnd = string.find(macroBody, "@[^@]+,nodead")
     targetBegin = targetBegin + 1
-    targetEnd = targetEnd - 6
+    targetEnd = targetEnd - 7
 
     local target = string.sub(macroBody, targetBegin, targetEnd)
     local targetGuid = UnitGUID(target)
@@ -40,7 +40,7 @@ local t=GetUnitName("target", true)
 if t ~= nil then
     local n="Void Eruption"
     local m=GetMacroBody(n)
-    m=string.gsub(m, "@[^@]+]Power", "@"..t.."]Power")
+    m=string.gsub(m, "@[^@]+,nodead", "@"..t..",nodead")
     EditMacro(n,n,nil,m)
     WeakAuras.ScanEvents("INK_PI_TARGET_CHANGED")
 end
@@ -49,11 +49,11 @@ end
 Sample "Void Eruption" macro:
 ```
 #showtooltip
-/stopmacro [channeling:Void Torrent][@target,noexists][@target,noharm][noform:1]
-/cqs
-/cast Void Eruption
-/use Rotcrusted Voodoo Doll
-/cast [@Ellieharris-Proudmoore]Power Infusion
+/stopmacro [channeling:Void Torrent][noharm][noform:1]
+/cast [known:Void Eruption]Void Eruption;Dark Ascension
+/use item:193773
+/cast [@Moxbob-BleedingHollow,nodead]Power Infusion
+/cast Vampiric Embrace
 /cast Void Bolt
 ```
 ]]
