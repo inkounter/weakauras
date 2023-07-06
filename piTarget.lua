@@ -1,15 +1,5 @@
--- trigger (status): INK_PI_TARGET_CHANGED
-function()
-    return true
-end
-
--- untrigger
-function()
-    return false
-end
-
--- name
-function()
+-- trigger (status): INK_PI_TARGET_CHANGED, READY_CHECK
+function(event)
     local macroName = "Void Eruption"
     local macroBody = GetMacroBody(macroName)
     local targetBegin, targetEnd = string.find(macroBody, "@[^@]+]Power")
@@ -17,8 +7,30 @@ function()
     targetEnd = targetEnd - 6
 
     local target = string.sub(macroBody, targetBegin, targetEnd)
+    local targetGuid = UnitGUID(target)
 
-    return target
+    if targetGuid == nil or string.sub(targetGuid, 1, 6) ~= "Player" then
+        if event == "READY_CHECK" then
+            WeakAuras.ScanEvents("INK_NO_PI_TARGET")
+        end
+
+        return false
+    end
+
+    aura_env.targetGuid = targetGuid
+    WeakAuras.ScanEvents("INK_PI_TARGET_VALID")
+
+    return true
+end
+
+-- untrigger
+function()
+    return true
+end
+
+-- name
+function(event)
+    return aura_env.targetGuid
 end
 
 --[[
