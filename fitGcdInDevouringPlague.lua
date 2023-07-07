@@ -10,30 +10,43 @@ local border = {
 aura_env.region.cooldown:SetSwipeTexture(border[aura_env.config.b])
 aura_env.region.cooldown:SetSwipeColor(unpack(aura_env.config.c))
 
--- Condition Custom Check
+-- Custom Trigger: TRIGGER:1, UNIT_SPELL_HASTE:player, INK_SCHEDULED_DEVOURING_PLAGUE_GCD_CUTOFF
 
-function(states)
-    if not states[1].show then
+function(event, ...)
+    if event == "TRIGGER" then
+        local triggerStates = select(2, ...)
+        local state = triggerStates[""]
+        if state == nil then
+            return false
+        end
+        aura_env.expirationTime = state.expirationTime
+    end
+
+    if aura_env.expirationTime == nil then
         return false
     end
 
-    local gcdCutoff = states[1].expirationTime - WeakAuras.gcdDuration()
+    local gcdCutoff = aura_env.expirationTime - WeakAuras.gcdDuration()
     local currentTime = GetTime()
 
-    if currentTime >= gcdCutoff then
-        aura_env.region.cooldown:SetSwipeColor(unpack(aura_env.config.c2))
-    else
-        aura_env.region.cooldown:SetSwipeColor(unpack(aura_env.config.c))
-
-        if aura_env.timer then
-            aura_env.timer:Cancel()
-        end
-
-        local recolorAsTooLate = function()
-            aura_env.region.cooldown:SetSwipeColor(unpack(aura_env.config.c2))
-        end
-
-        aura_env.timer = C_Timer.NewTimer(gcdCutoff - GetTime(),
-                                          recolorAsTooLate)
+    if aura_env.timer ~= nil then
+        aura_env.timer:Cancel()
     end
+
+    if currentTime >= gcdCutoff then
+        return true
+    else
+        local retrigger = function()
+            WeakAuras.ScanEvents("INK_SCHEDULED_DEVOURING_PLAGUE_GCD_CUTOFF")
+        end
+
+        aura_env.timer = C_Timer.NewTimer(gcdCutoff - GetTime(), retrigger)
+        return false
+    end
+end
+
+-- Untrigger
+
+function()
+    return true
 end
