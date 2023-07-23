@@ -1,14 +1,11 @@
 -------------------------------------------------------------------------------
 -- init
 
-aura_env.hasNeverSurrender = select(4, GetTalentInfoByID(22384, 1))
-
 aura_env.singleState = {
     ["icon"] = select(3, GetSpellInfo(190456)),
     ["progressType"] = "static",
     ["autoHide"] = not aura_env.config.alwaysShow,
-    ["show"] = aura_env.config.alwaysShow,
-    ["hasNeverSurrender"] = aura_env.hasNeverSurrender
+    ["show"] = aura_env.config.alwaysShow
 }
 
 local getSpellTooltipAmount = function()
@@ -45,14 +42,9 @@ aura_env.calculateState = function(state)
     state["value"] = currentAbsorb
 
     -- Retrieve how much absorption a new cast would give based on the tooltip
-    -- value.  Apply the Never Surrender multiplier, if applicable.
+    -- value.
 
     local castAbsorb = getSpellTooltipAmount()
-    if aura_env.hasNeverSurrender then
-        local neverSurrenderMultiplier = (
-            1.4 + (0.6 * (1 - UnitHealth("player") / UnitHealthMax("player"))))
-        castAbsorb = castAbsorb * neverSurrenderMultiplier
-    end
 
     state["castAbsorb"] = castAbsorb
 
@@ -73,23 +65,16 @@ aura_env.calculateState = function(state)
 end
 
 -------------------------------------------------------------------------------
--- trigger (TSU): UNIT_AURA:player, UNIT_HEALTH:player, PLAYER_EQUIPMENT_CHANGED, PLAYER_TALENT_UPDATE
+-- trigger (TSU): UNIT_AURA:player, UNIT_ATTACK_POWER:player, UNIT_STATS:player, UNIT_MAXHEALTH:player
 
 function(allstates, event, ...)
-    -- Ignore the 'UNIT_HEALTH' event if the player doesn't have the Never
-    -- Surrender talent.
-
-    if event == "UNIT_HEALTH" and not aura_env.hasNeverSurrender then
-        return false
-    end
-
-    -- Point 'allstates[1]' to 'aura_env.singleState'.  Note that we use a TSU
+    -- Point 'allstates[""]' to 'aura_env.singleState'.  Note that we use a TSU
     -- even though we have only one state because we include custom variables.
 
-    local state = allstates[1]
+    local state = allstates[""]
     if state == nil then
         state = aura_env.singleState
-        allstates[1] = state
+        allstates[""] = state
     end
 
     -- Update the 'autoHide' and 'show' values on receipt of the 'OPTIONS'
@@ -103,16 +88,6 @@ function(allstates, event, ...)
 
         state["changed"] = true
         return true
-    end
-
-    -- On 'TALENT_UPDATE_UPDATE', re-check whether the player has the Never
-    -- Surrender talent, but continue to update the state.
-
-    if event == "PLAYER_TALENT_UPDATE" then
-        local hasNeverSurrender = select(4, GetTalentInfoByID(22384, 1))
-
-        aura_env.hasNeverSurrender = hasNeverSurrender
-        state["hasNeverSurrender"] = hasNeverSurrender
     end
 
     -- Calculate the state.
@@ -136,13 +111,6 @@ end
 -- custom variables
 
 {
-    ---------------------------------------------------------------------------
-    -- CUSTOM STATE VARIABLES
-
-    ["hasNeverSurrender"] = "bool",
-        -- 'true' if the player has the Never Surrender talent.  Otherwise,
-        -- 'false'.
-
     ["currentAbsorb"] = "number",
         -- The amount of absorption currently active on the player from Ignore
         -- Pain, taken from the Ignore Pain buff tooltip, or 0 if the buff is
