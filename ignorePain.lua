@@ -59,7 +59,7 @@ aura_env.calculateState = function(state)
     -- Provide additional calculated values, derived from the above retrieved
     -- values.
 
-    local absorbCap = castAbsorb * 2
+    local absorbCap = UnitHealthMax("player") * 0.3
     local additionalAbsorbOnCast = math.min(
                                         math.max(0, absorbCap - currentAbsorb),
                                         castAbsorb)
