@@ -9,6 +9,11 @@
 
 aura_env.damageHistory = {}
 aura_env.ignoreUnitGuidDeath = {}   -- For priests' Spirit of Redemption
+aura_env.cheatDebuffs = {}
+
+for _, debuff in ipairs(aura_env.config.cheatDebuffs) do
+    aura_env.cheatDebuffs[debuff.spellId] = true
+end
 
 aura_env.getSpellText = function(spell, school)
     -- Return a formatted string describing the specified 'spell' of the
@@ -265,25 +270,15 @@ function(event, ...)
         local spellId = select(12, ...)
         spellId = tonumber(spellId)
 
-        if spellId == 45181         -- Cheated Death
-        or spellId == 87024         -- Cauterized
-        or spellId == 209261        -- Uncontained Fel
-        or spellId == 123981        -- Perdition
-        or spellId == 344907 then   -- Splintered Heart of Al'ar
-            -- Ignore this event if the aura was not just applied.
+        -- Ignore this event if the aura was not just applied or if it's a
+        -- wipe.
 
-            if aura_env.spellIsRecentlyApplied(unit, spellId)
-            and not aura_env.isWipe() then
-                aura_env.reportCauseOfDeath(unitGuid, unit)
-            end
-        elseif spellId == 27827 then    -- Spirit of Redemption
-            -- Ignore this event if the aura was not just applied.
+        if not aura_env.spellIsRecentlyApplied(unit, spellId)
+        or aura_env.isWipe() then
+            return
+        end
 
-            if not aura_env.spellIsRecentlyApplied(unit, spellId)
-            or aura_env.isWipe() then
-                return
-            end
-
+        if spellId == 27827 then    -- Spirit of Redemption
             -- Delay the report by a second, since this aura is applied before
             -- the combat log reports the damage event that took the unit to 0
             -- health.
@@ -294,6 +289,8 @@ function(event, ...)
             -- 'UNIT_DIED' event.
 
             aura_env.ignoreUnitGuidDeath[unitGuid] = true
+        elseif aura_env.cheatDebuffs[spellId] ~= nil then
+            aura_env.reportCauseOfDeath(unitGuid, unit)
         end
     elseif subevent:find("_DAMAGE") ~= nil then
         -- Extract the event's information.
