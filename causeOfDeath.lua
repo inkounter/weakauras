@@ -9,7 +9,6 @@
 
 aura_env.damageHistory = {}
 aura_env.ignoreUnitGuidDeath = {}   -- For priests' Spirit of Redemption
-aura_env.ignorePodtender = {}       -- For Night Fae's Podtender
 
 aura_env.getSpellText = function(spell, school)
     -- Return a formatted string describing the specified 'spell' of the
@@ -207,7 +206,7 @@ aura_env.recordDamageEvent = function(unit,
 end
 
 -------------------------------------------------------------------------------
--- trigger: WA_CAUSEOFDEATH_DEFERRED, CLEU:UNIT_DIED, CLEU:SPELL_AURA_APPLIED, CLEU:SWING_DAMAGE, CLEU:RANGE_DAMAGE, CLEU:SPELL_DAMAGE, CLEU:SPELL_PERIODIC_DAMAGE, CLEU:SPELL_BUILDING_DAMAGE, CLEU:ENVIRONMENTAL_DAMAGE, CLEU:SWING_MISSED, CLEU:RANGE_MISSED, CLEU:SPELL_MISSED, CLEU:SPELL_PERIODIC_MISSED, CLEU:SPELL_BUILDING_MISSED, CLEU:ENVIRONMENTAL_MISSED, CLEU:SWING_INSTAKILL, CLEU:RANGE_INSTAKILL, CLEU:SPELL_INSTAKILL, CLEU:SPELL_PERIODIC_INSTAKILL, CLEU:SPELL_BUILDING_INSTAKILL, CLEU:ENVIRONMENTAL_INSTAKILL, CLEU:SPELL_ABSORBED
+-- trigger: WA_CAUSEOFDEATH_DEFERRED, CLEU:UNIT_DIED, CLEU:SPELL_AURA_APPLIED, CLEU:SWING_DAMAGE, CLEU:RANGE_DAMAGE, CLEU:SPELL_DAMAGE, CLEU:SPELL_PERIODIC_DAMAGE, CLEU:SPELL_BUILDING_DAMAGE, CLEU:ENVIRONMENTAL_DAMAGE, CLEU:SWING_MISSED, CLEU:RANGE_MISSED, CLEU:SPELL_MISSED, CLEU:SPELL_PERIODIC_MISSED, CLEU:SPELL_BUILDING_MISSED, CLEU:ENVIRONMENTAL_MISSED, CLEU:SWING_INSTAKILL, CLEU:RANGE_INSTAKILL, CLEU:SPELL_INSTAKILL, CLEU:SPELL_PERIODIC_INSTAKILL, CLEU:SPELL_BUILDING_INSTAKILL, CLEU:ENVIRONMENTAL_INSTAKILL
 
 function(event, ...)
     -- Note that this function never triggers because we're not interested in
@@ -295,79 +294,6 @@ function(event, ...)
             -- 'UNIT_DIED' event.
 
             aura_env.ignoreUnitGuidDeath[unitGuid] = true
-        end
-    elseif subevent == "SPELL_ABSORBED" then
-        -- Check if this absorption is from Podtender or Forgeborne Reveries.
-        --
-        -- The spell ID absorbing the damage may be either the 16th or 19th
-        -- argument, depending on the whether the attack being absorbed is a
-        -- spell.  If the absorbed attack is not a spell, then arguments 12
-        -- through 14 are the attacking spell ID, spell name, and spell school,
-        -- respectively.  Otherwise, these fields are omitted, and argument 12
-        -- is the attacking unit GUID.  Here, we check the type of argument 12.
-        -- If it is a number, then we assume it's a spell ID.  Otherwise, we
-        -- assume it's a unit GUID.
-
-        local absorbSpell = nil
-        local amount = nil
-        local spell = nil
-        local school = nil
-
-        local arg12 = select(12, ...)
-        if type(arg12) == "number" then
-            -- The absorbed attack is a spell.
-
-            spell, _, school = select(12, ...)
-            absorbSpell, _, _, amount = select(19, ...)
-        else
-            -- The absorbed attack is a melee attack.
-
-            spell = "Melee"
-            school = 1  -- physical
-            absorbSpell, _, _, amount = select(16, ...)
-        end
-
-        if absorbSpell == 320221 then   -- Podtender
-            -- Ignore the event if this player has already procced Podtender.
-
-            if aura_env.ignorePodtender[unitGuid] then
-                return
-            end
-
-            -- Ignore further Podtender absorptions on this player for the
-            -- remainder of its duration (plus some leeway time).
-
-            aura_env.ignorePodtender[unitGuid] = true
-            local aura_env = aura_env
-            C_Timer.After(15, function() aura_env.ignorePodtender[unitGuid] = nil end)
-
-            -- The 'SPELL_ABSORBED' and '_DAMAGE' events arrive in an inconsistent
-            -- order.  Delay the report in case the '_DAMAGE' event comes later.
-
-            C_Timer.After(1, function() WeakAuras.ScanEvents("WA_CAUSEOFDEATH_DEFERRED", unitGuid, unit) end)
-        elseif absorbSpell == 326514 then   -- Forgeborne Reveries
-            -- This is the only combat log event emitted for this damage event
-            -- other than a '*_MISSED' event.  Add it to the damage history and
-            -- report the death.
-            --
-            -- NOTE: This implementation assumes that the '*_MISSED' event
-            -- always comes after this 'SPELL_ABSORBED' event.  More data is
-            -- needed to confirm or deny this assumption.
-
-            aura_env.recordDamageEvent(unit, amount, spell, school)
-
-            if not aura_env.isWipe() then
-                aura_env.reportCauseOfDeath(unitGuid, unit)
-            end
-
-            -- Also save this unit GUID so that we can ignore its impending
-            -- 'UNIT_DIED' event.
-
-            aura_env.ignoreUnitGuidDeath[unitGuid] = true
-        else
-            -- Ignore this event.
-
-            return
         end
     elseif subevent:find("_DAMAGE") ~= nil then
         -- Extract the event's information.
