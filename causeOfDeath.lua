@@ -270,15 +270,15 @@ function(event, ...)
         local spellId = select(12, ...)
         spellId = tonumber(spellId)
 
-        -- Ignore this event if the aura was not just applied or if it's a
-        -- wipe.
-
-        if not aura_env.spellIsRecentlyApplied(unit, spellId)
-        or aura_env.isWipe() then
-            return
-        end
-
         if spellId == 27827 then    -- Spirit of Redemption
+            -- Ignore this event if the aura was not just applied or if it's a
+            -- wipe.
+
+            if not aura_env.spellIsRecentlyApplied(unit, spellId)
+            or aura_env.isWipe() then
+                return
+            end
+
             -- Delay the report by a second, since this aura is applied before
             -- the combat log reports the damage event that took the unit to 0
             -- health.
@@ -290,6 +290,14 @@ function(event, ...)
 
             aura_env.ignoreUnitGuidDeath[unitGuid] = true
         elseif aura_env.cheatDebuffs[spellId] ~= nil then
+            -- Ignore this event if the aura was not just applied or if it's a
+            -- wipe.
+
+            if not aura_env.spellIsRecentlyApplied(unit, spellId)
+            or aura_env.isWipe() then
+                return
+            end
+
             aura_env.reportCauseOfDeath(unitGuid, unit)
         end
     elseif subevent:find("_DAMAGE") ~= nil then
