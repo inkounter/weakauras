@@ -3,8 +3,6 @@
 
 - improve readability
 - add separate ready check weakaura
-- add logic so that if a static target is removed, its state is inserted as a
-  new autohide-enabled state
 ]]
 
 
@@ -26,6 +24,25 @@ local tryUpdateStateDuration = function(state, expirationTime, duration)
     end
 
     return false
+end
+
+local addAutohideEnabledState = function(allstates, unitName)
+    -- Insert into 'allstates' an autohide-enabled state for the specified
+    -- 'unitName'.  The inserted state will not include any progress
+    -- information.  Return the inserted state.
+
+    local classFile = select(2, UnitClass(unitName))
+    local state = { ["show"] = true,
+                    ["changed"] = true,
+                    ["index"] = 99,   -- Order after the static set.
+                    ["progressType"] = "timed",
+                    ["autoHide"] = true,
+                    ["color"] = C_ClassColor.GetClassColor(classFile),
+                    ["name"] = unitName,
+                    ["dead"] = false }
+    allstates[unitName] = state
+
+    return state
 end
 
 aura_env.handleAuraChange = function(allstates, triggerStates)
@@ -68,15 +85,9 @@ aura_env.handleAuraChange = function(allstates, triggerStates)
         if not matchingStateFound then
             local state = allstates[unitName]
             if state == nil then
-                local classFile = select(2, UnitClass(unit))
-                state = { ["show"] = true,
-                          ["index"] = 99,   -- Order after the static set.
-                          ["progressType"] = "timed",
-                          ["autoHide"] = true,
-                          ["color"] = C_ClassColor.GetClassColor(classFile),
-                          ["name"] = unitName,
-                          ["dead"] = false }
-                allstates[unitName] = state
+                state = addAutohideEnabledState(allstates, unitName)
+
+                changed = true
             end
 
             changed = tryUpdateStateDuration(state,
@@ -134,11 +145,52 @@ aura_env.handleHealthChange = function(allstates, triggerStates)
     return changed
 end
 
+local assignStaticState = function(state, unitName)
+    -- Set the specified 'state' for the specified 'unitName'.  Return 'true'
+    -- if 'unitName' is an addressable player unit.  Otherwise, return 'false'.
+
+    state["changed"] = true
+    state["name"] = unitName
+
+    local targetGuid = UnitGUID(unitName)
+    if targetGuid == nil or string.sub(targetGuid, 1, 6) ~= "Player" then
+        -- This unit either doesn't exist or is a non-player unit.
+
+        hasEmptyTarget = true
+
+        state["color"] = CreateColor(0, 0, 0)   -- black
+
+        state["expirationTime"] = 1
+        state["duration"] = 1
+        state["dead"] = false
+
+        return false
+    else
+        local classFile = select(2, UnitClass(unitName))
+        state["color"] = C_ClassColor.GetClassColor(classFile)
+
+        local _, _, _, _, duration, expirationTime = WA_GetUnitBuff(unitName,
+                                                                    410089,
+                                                                    "PLAYER")
+
+        state["expirationTime"] = expirationTime or 1
+        state["duration"] = duration or 1
+        state["dead"] = UnitIsDeadOrGhost(unitName)
+
+        return true
+    end
+end
+
 aura_env.handleInit = function(allstates)
     -- Modify the static states in 'allstates' to reflect the macroed
-    -- prescience targets.  Return 'true'.
+    -- prescience targets.  Return 'true' if any state is changed.  Otherwise,
+    -- return 'false'.
 
+    local changed = false
     local hasEmptyTarget = false
+
+    local newStaticTargetNames = {}
+    local removedStaticTargetStates = {}
 
     for index = 1, 3 do
         -- Read the macro body for its target.
@@ -149,65 +201,75 @@ aura_env.handleInit = function(allstates)
         targetBegin = targetBegin + 1
         targetEnd = targetEnd - 8
 
-        local target = string.sub(macroBody, targetBegin, targetEnd)
-        local targetGuid = UnitGUID(target)
-        local targetEmpty = false
-
-        if targetGuid == nil or string.sub(targetGuid, 1, 6) ~= "Player" then
-            -- This target either doesn't exist or is a non-player unit.
-
-            targetEmpty = true
-        end
+        local targetName = string.sub(macroBody, targetBegin, targetEnd)
+        newStaticTargetNames[targetName] = true
 
         local state = allstates[index]
         if state == nil then
             state = { ["show"] = true,
+                      ["changed"] = true,
                       ["index"] = index,
                       ["progressType"] = "timed",
                       ["autoHide"] = false }
             allstates[index] = state
+
+            changed = true
         end
 
-        state["changed"] = true
-        state["name"] = target
+        local oldTargetName = state["name"]
+        if oldTargetName ~= targetName then
+            if oldTargetName ~= nil
+                       and removedStaticTargetStates[oldTargetName] == nil then
+                -- Cache the preexisting state's duration info in case we need
+                -- to add an autohide-enabled state for its target.
 
-        if targetEmpty then
-            hasEmptyTarget = true
+                removedStaticTargetStates[oldTargetName] = {
+                                  ["expirationTime"] = state["expirationTime"],
+                                  ["duration"] = state["duration"] }
+            end
 
-            state["color"] = CreateColor(0, 0, 0)   -- black
+            -- Reassign this state.
 
-            state["expirationTime"] = 1
-            state["duration"] = 1
-            state["dead"] = false
-        else
-            local classFile = select(2, UnitClass(target))
-            state["color"] = C_ClassColor.GetClassColor(classFile)
+            hasEmptyTarget = not assignStaticState(state, targetName) or hasEmptyTarget
 
-            local _, _, _, _, duration, expirationTime = WA_GetUnitBuff(
-                                                                      target,
-                                                                      410089,
-                                                                      "PLAYER")
+            changed = true
 
-            state["expirationTime"] = expirationTime or 1
-            state["duration"] = duration or 1
-            state["dead"] = UnitIsDeadOrGhost(target)
+            -- Set the color for the region if it already exists.  Otherwise,
+            -- rely on the "on show" custom code block to change the color.
 
-            -- Also delete any other state already maintained for this target
+            local region = WeakAuras.GetRegion(aura_env.id, index)
+            if region ~= nil then
+                region:Color(state["color"]:GetRGBA())
+            end
+
+            -- Also delete any autohide-enabled state maintained for this unit
             -- (where the clone ID is the unit name).
 
-            local namedState = allstates[target]
+            local namedState = allstates[targetName]
             if namedState ~= nil then
                 namedState["show"] = false
                 namedState["changed"] = true
+
+                changed = true
             end
         end
+    end
 
-        -- Set the color for the region if it already exists.  Otherwise, rely
-        -- on the "on show" custom code block to change the color.
+    -- Check if any of the removed static targets have to be inserted as
+    -- autohide-enabled states.
 
-        local region = WeakAuras.GetRegion(aura_env.id, index)
-        if region ~= nil then
-            region:Color(state["color"]:GetRGBA())
+    for targetName, semiState in pairs(removedStaticTargetStates) do
+        if newStaticTargetNames[targetName] == nil then
+            -- 'targetName' no longer matches any of the static targets.  Add
+            -- an autohide-enabled state for it and merge the duration info in.
+
+
+            local state = addAutohideEnabledState(allstates, targetName)
+            for k, v in pairs(semiState) do
+                state[k] = v
+            end
+
+            changed = true
         end
     end
 
@@ -219,7 +281,7 @@ aura_env.handleInit = function(allstates)
         WeakAuras.ScanEvents("INK_PRESCIENCE_ALL_TARGETS_VALID", index)
     end
 
-    return true
+    return changed
 end
 
 
