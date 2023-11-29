@@ -31,14 +31,15 @@ local addAutohideEnabledState = function(allstates, unitName)
     -- 'unitName'.  The inserted state will not include any progress
     -- information.  Return the inserted state.
 
-    local classFile = select(2, UnitClass(unitName))
+    local className, classFile = UnitClass(unitName)
     local state = { ["show"] = true,
                     ["changed"] = true,
                     ["index"] = 99,   -- Order after the static set.
                     ["progressType"] = "timed",
                     ["autoHide"] = true,
                     ["color"] = C_ClassColor.GetClassColor(classFile),
-                    ["name"] = unitName,
+                    ["unitName"] = unitName,
+                    ["unitClass"] = className,
                     ["dead"] = false }
     allstates[unitName] = state
 
@@ -69,7 +70,7 @@ aura_env.handleAuraChange = function(allstates, triggerStates)
 
         for index = 1, 3 do
             local state = allstates[index]
-            if state["name"] == unitName then
+            if state["unitName"] == unitName then
                 matchingStateFound = true
 
                 changed = tryUpdateStateDuration(state,
@@ -100,7 +101,7 @@ aura_env.handleAuraChange = function(allstates, triggerStates)
     -- state in 'triggerStates'
 
     for cloneId, state in pairs(allstates) do
-        if activeUnitNames[state["name"]] == nil then
+        if activeUnitNames[state["unitName"]] == nil then
             if cloneId == 1 or cloneId == 2 or cloneId == 3 then
                 state["expirationTime"] = 1
             else
@@ -133,7 +134,7 @@ aura_env.handleHealthChange = function(allstates, triggerStates)
     local changed = false
 
     for _, state in pairs(allstates) do
-        local newDead = (deadUnitNames[state["name"]] ~= nil)
+        local newDead = (deadUnitNames[state["unitName"]] ~= nil)
         if state["dead"] ~= newDead then
             state["dead"] = newDead
             state["changed"] = true
@@ -150,7 +151,7 @@ local assignStaticState = function(state, unitName)
     -- if 'unitName' is an addressable player unit.  Otherwise, return 'false'.
 
     state["changed"] = true
-    state["name"] = unitName
+    state["unitName"] = unitName
 
     local targetGuid = UnitGUID(unitName)
     if targetGuid == nil or string.sub(targetGuid, 1, 6) ~= "Player" then
@@ -159,6 +160,7 @@ local assignStaticState = function(state, unitName)
         hasEmptyTarget = true
 
         state["color"] = CreateColor(0, 0, 0)   -- black
+        state["unitClass"] = nil
 
         state["expirationTime"] = 1
         state["duration"] = 1
@@ -166,8 +168,9 @@ local assignStaticState = function(state, unitName)
 
         return false
     else
-        local classFile = select(2, UnitClass(unitName))
+        local className, classFile = UnitClass(unitName)
         state["color"] = C_ClassColor.GetClassColor(classFile)
+        state["unitClass"] = className
 
         local _, _, _, _, duration, expirationTime = WA_GetUnitBuff(unitName,
                                                                     410089,
@@ -216,7 +219,7 @@ aura_env.handleInit = function(allstates)
             changed = true
         end
 
-        local oldTargetName = state["name"]
+        local oldTargetName = state["unitName"]
         if oldTargetName ~= targetName then
             if oldTargetName ~= nil
                        and removedStaticTargetStates[oldTargetName] == nil then
@@ -317,7 +320,8 @@ end
     ["expirationTime"] = true,
     ["duration"] = true,
 
-    ["name"] = "string",
+    ["unitName"] = "string",
+    ["unitClass"] = "string",
     ["dead"] = "bool",
 }
 
