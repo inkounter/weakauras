@@ -1,12 +1,4 @@
 -------------------------------------------------------------------------------
---[[ TODO
-
-- improve readability
-- add separate ready check weakaura
-]]
-
-
--------------------------------------------------------------------------------
 -- init
 
 local tryUpdateStateDuration = function(state, expirationTime, duration)
@@ -149,27 +141,27 @@ aura_env.handleHealthChange = function(allstates, triggerStates)
     return changed
 end
 
+local isAddressablePlayer = function(unitName)
+    -- Return 'true' if the specified 'unitName' is an addressable player unit.
+    -- Otherwise, return 'false'.
+
+    local unitGuid = UnitGUID(unitName)
+    return unitGuid ~= nil and string.sub(unitGuid, 1, 6) == "Player"
+end
+
 local assignStaticState = function(state, unitName)
-    -- Set the specified 'state' for the specified 'unitName'.  Return 'true'
-    -- if 'unitName' is an addressable player unit.  Otherwise, return 'false'.
+    -- Set the specified 'state' for the specified 'unitName'.  Return 'nil'.
 
     state["changed"] = true
     state["unitName"] = unitName
 
-    local targetGuid = UnitGUID(unitName)
-    if targetGuid == nil or string.sub(targetGuid, 1, 6) ~= "Player" then
-        -- This unit either doesn't exist or is a non-player unit.
-
-        hasEmptyTarget = true
-
+    if not isAddressablePlayer(unitName) then
         state["color"] = black
         state["unitClass"] = nil
 
         state["expirationTime"] = 1
         state["duration"] = 1
         state["dead"] = false
-
-        return false
     else
         local className, classFile = UnitClass(unitName)
         state["color"] = C_ClassColor.GetClassColor(classFile)
@@ -182,8 +174,6 @@ local assignStaticState = function(state, unitName)
         state["expirationTime"] = expirationTime or 1
         state["duration"] = duration or 1
         state["dead"] = UnitIsDeadOrGhost(unitName)
-
-        return true
     end
 end
 
@@ -193,7 +183,6 @@ aura_env.handleInit = function(allstates)
     -- return 'false'.
 
     local changed = false
-    local hasEmptyTarget = false
 
     local newStaticTargetNames = {}
     local removedStaticTargetStates = {}
@@ -236,7 +225,7 @@ aura_env.handleInit = function(allstates)
 
             -- Reassign this state.
 
-            hasEmptyTarget = not assignStaticState(state, targetName) or hasEmptyTarget
+            assignStaticState(state, targetName)
 
             changed = true
 
@@ -279,15 +268,20 @@ aura_env.handleInit = function(allstates)
         end
     end
 
-    if hasEmptyTarget then
-        if event == "READY_CHECK" then
-            WeakAuras.ScanEvents("INK_PRESCIENCE_TARGET_EMPTY", index)
+    return changed
+end
+
+aura_env.hasEmptyStaticTargets = function(allstates)
+    -- Return 'true' if any of the static targets in the specified 'allstates'
+    -- is not an addressable player.  Otherwise, return 'false'.
+
+    for i = 1, 3 do
+        if not isAddressablePlayer(allstates[i]["unitName"]) then
+            return true
         end
-    else
-        WeakAuras.ScanEvents("INK_PRESCIENCE_ALL_TARGETS_VALID", index)
     end
 
-    return changed
+    return false
 end
 
 
@@ -310,8 +304,20 @@ function(allstates, event, ...)
         else
             return aura_env.handleHealthChange(allstates, triggerStates)
         end
-    else
-        return aura_env.handleInit(allstates)
+    elseif event == "READY_CHECK" then
+        if aura_env.hasEmptyStaticTargets(allstates) then
+            WeakAuras.ScanEvents("INK_PRESCIENCE_TARGET_EMPTY")
+        end
+
+        return false
+    else    -- 'INK_PRESCIENCE_TARGET_CHANGED' or 'STATUS'
+        local changed = aura_env.handleInit(allstates)
+
+        if not aura_env.hasEmptyStaticTargets(allstates) then
+            WeakAuras.ScanEvents("INK_PRESCIENCE_ALL_TARGETS_VALID")
+        end
+
+        return changed
     end
 end
 
