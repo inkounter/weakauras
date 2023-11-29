@@ -26,18 +26,21 @@ local tryUpdateStateDuration = function(state, expirationTime, duration)
     return false
 end
 
+local black = CreateColor(0, 0, 0)
+
 local addAutohideEnabledState = function(allstates, unitName)
     -- Insert into 'allstates' an autohide-enabled state for the specified
     -- 'unitName'.  The inserted state will not include any progress
     -- information.  Return the inserted state.
 
     local className, classFile = UnitClass(unitName)
+    local classColor = classFile and C_ClassColor.GetClassColor(classFile) or black
     local state = { ["show"] = true,
                     ["changed"] = true,
                     ["index"] = 99,   -- Order after the static set.
                     ["progressType"] = "timed",
                     ["autoHide"] = true,
-                    ["color"] = C_ClassColor.GetClassColor(classFile),
+                    ["color"] = classColor,
                     ["unitName"] = unitName,
                     ["unitClass"] = className,
                     ["dead"] = false }
@@ -159,7 +162,7 @@ local assignStaticState = function(state, unitName)
 
         hasEmptyTarget = true
 
-        state["color"] = CreateColor(0, 0, 0)   -- black
+        state["color"] = black
         state["unitClass"] = nil
 
         state["expirationTime"] = 1
