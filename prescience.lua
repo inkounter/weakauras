@@ -1,3 +1,8 @@
+--[[
+TODO:
+- [FEATURE] add range detection
+]]--
+
 -------------------------------------------------------------------------------
 -- init
 
@@ -230,7 +235,7 @@ aura_env.handleInit = function(allstates)
             changed = true
 
             -- Set the color for the region if it already exists.  Otherwise,
-            -- rely on the "on show" custom code block to change the color.
+            -- rely on the "condition" custom code block to change the color.
 
             local region = WeakAuras.GetRegion(aura_env.id, index)
             if region ~= nil then
@@ -286,11 +291,16 @@ end
 
 
 -------------------------------------------------------------------------------
--- on show
+-- condition
 
 local color = aura_env.state["color"]
-aura_env.region:Color(color:GetRGBA())
+local setColor = function() aura_env.region:Color(color:GetRGBA()) end
+setColor()
 
+-- Also set the color on the next frame as a way to circumvent WeakAuras
+-- reverting the foreground color to its "Display" setting.
+
+C_Timer.After(0, setColor)
 
 -------------------------------------------------------------------------------
 -- TSU: TRIGGER:1:2, INK_PRESCIENCE_TARGET_CHANGED, READY_CHECK
