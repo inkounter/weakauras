@@ -303,13 +303,13 @@ setColor()
 C_Timer.After(0, setColor)
 
 -------------------------------------------------------------------------------
--- TSU: TRIGGER:1:2, INK_PRESCIENCE_TARGET_CHANGED, READY_CHECK
+-- TSU: TRIGGER:2:3, INK_PRESCIENCE_TARGET_CHANGED, READY_CHECK
 
 function(allstates, event, ...)
     if event == 'TRIGGER' then
         local triggerNumber, triggerStates = ...
 
-        if triggerNumber == 1 then
+        if triggerNumber == 2 then
             return aura_env.handleAuraChange(allstates, triggerStates)
         else
             return aura_env.handleHealthChange(allstates, triggerStates)
