@@ -83,8 +83,6 @@ function(allstates, event, unit, updateInfo)
                         ['suddenAmbush'] = aura_env.hasSuddenAmbush and true or false
                     }
 
-                    DevTool:AddData(updateInfo, unit .. '-add-' .. data['expirationTime'])
-
                     return true
                 end
             end
@@ -101,6 +99,7 @@ function(allstates, event, unit, updateInfo)
                     local data = C_UnitAuras.GetAuraDataByAuraInstanceID(
                                                                 unit,
                                                                 auraInstanceId)
+
                     -- The expiration time sometimes gets micro-adjusted with
                     -- updates.  Don't update the 'suddenAmbush' value for
                     -- these jitters.
@@ -116,9 +115,6 @@ function(allstates, event, unit, updateInfo)
                     state['unit'] = unit
                     state['expirationTime'] = data['expirationTime']
                     state['duration'] = data['duration']
-
-
-                    DevTool:AddData(updateInfo, unit .. '-update-' .. data['expirationTime'])
 
                     return true
                 end
