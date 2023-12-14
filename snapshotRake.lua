@@ -1,22 +1,14 @@
 --[[
-THE GOAL:
-    - track Sudden Ambush (spell ID 391974) on player
-    - track Rake (spell ID 155722) on target (or any enemy unit)
-        - track even if the Rake is not snapshotted
-    - when Rake is applied while Sudden Ambush is applied, then set a state
-      value to 'true'
-
-Enhancements:
-    - allow clearing the target and retargeting
-        - save state by the unit GUID (since 'nameplate' targets can reassign)
-    - allow for multiple targets
+TODO:
+- make a version that is specific to 'target'
+    - update on 'PLAYER_TARGET_CHANGED'
 ]]
 
 -------------------------------------------------------------------------------
--- TSU: UNIT_AURA:player, UNIT_AURA:nameplate
+-- TSU: UNIT_AURA:player, UNIT_AURA:nameplate, NAME_PLATE_UNIT_REMOVED, NAME_PLATE_UNIT_ADDED
 
 function(allstates, event, unit, updateInfo)
-    if unit == 'player' then
+    if event == 'UNIT_AURA' and unit == 'player' then
         if not aura_env.hasSuddenAmbush then
             -- Check if Sudden Ambush is being added.  If it is, then set
             -- 'aura_env.hasSuddenAmbush'.  Return 'false'.
@@ -49,7 +41,7 @@ function(allstates, event, unit, updateInfo)
                 end
             end
         end
-    elseif unit ~= nil then
+    elseif event == 'UNIT_AURA' then
         -- Check if we already have a state for Rake on this unit.
 
         local unitGuid = UnitGUID(unit)
@@ -122,6 +114,36 @@ function(allstates, event, unit, updateInfo)
 
             return false
         end
+    elseif event == 'NAME_PLATE_UNIT_REMOVED' then
+        -- Check if this unit has a state.  If it does, set its 'unit' value to
+        -- 'nil'.
+
+        local unitGuid = UnitGUID(unit)
+        local state = allstates[unitGuid]
+
+        if state == nil then
+            return false
+        end
+
+        state['changed'] = true
+        state['unit'] = nil
+
+        return true
+    elseif event == 'NAME_PLATE_UNIT_ADDED' then
+        -- Check if this unit has a state.  If it does, set its 'unit' value to
+        -- this unit.
+
+        local unitGuid = UnitGUID(unit)
+        local state = allstates[unitGuid]
+
+        if state == nil then
+            return false
+        end
+
+        state['changed'] = true
+        state['unit'] = unit
+
+        return true
     end
 end
 
