@@ -1,40 +1,67 @@
 -------------------------------------------------------------------------------
+-- On Init
+
+aura_env.stealthSpellIds = {
+    -- A look-up set of spell IDs that make the next Rake count as used from
+    -- stealth.
+
+    [391974] = true,    -- Sudden Ambush
+    [5215]   = true,    -- Prowl
+    [58984]  = true,    -- Shadowmeld
+}
+
+-- A look-up set of aura instance IDs for stealth auras currently on the
+-- player.
+
+aura_env.activeStealths = {}
+
+aura_env.isStealthed = function()
+    -- Return 'true' if any stealth spell IDs are on the player.  Otherwise,
+    -- return 'false'.
+
+    for _, _ in pairs(aura_env.activeStealths) do
+        return true
+    end
+
+    return false
+end
+
+-------------------------------------------------------------------------------
 -- TSU: UNIT_AURA:player, UNIT_AURA:nameplate, NAME_PLATE_UNIT_REMOVED, NAME_PLATE_UNIT_ADDED, PLAYER_TARGET_CHANGED
 
 function(allstates, event, unit, updateInfo)
     if event == 'UNIT_AURA' and unit == 'player' then
-        if not aura_env.hasSuddenAmbush then
-            -- Check if Sudden Ambush is being added.  If it is, then set
-            -- 'aura_env.hasSuddenAmbush'.  Return 'false'.
+        -- Check if Sudden Ambush, Prowl, or Shadowmeld is being added or
+        -- removed.
 
-            if updateInfo['addedAuras'] == nil then
-                return false
-            end
-
+        if updateInfo['addedAuras'] ~= nil then
             for _, data in ipairs(updateInfo['addedAuras']) do
-                if data['spellId'] == 391974 then
-                    aura_env.hasSuddenAmbush = data['auraInstanceID']
-                    return false
-                end
-            end
-
-            return false
-        else
-            -- Check if Sudden Ambush is being removed.  If it is, then clear
-            -- 'aura_env.hasSuddenAmbush'.  Return 'false'.
-
-            if updateInfo['removedAuraInstanceIDs'] == nil then
-                return false
-            end
-
-            for _, auraInstanceId in ipairs(
-                                       updateInfo['removedAuraInstanceIDs']) do
-                if auraInstanceId == aura_env.hasSuddenAmbush then
-                    aura_env.hasSuddenAmbush = nil
-                    return false
+                local spellId = data['spellId']
+                if aura_env.stealthSpellIds[spellId] ~= nil then
+                    aura_env.activeStealths[data['auraInstanceID']] = true
                 end
             end
         end
+
+        if updateInfo['removedAuraInstanceIDs'] ~= nil then
+            for _, auraInstanceId in ipairs(
+                                       updateInfo['removedAuraInstanceIDs']) do
+                aura_env.activeStealths[auraInstanceId] = nil
+            end
+        end
+
+        return false
+    elseif event == 'STATUS' then
+        -- Fetch whether we're in stealth.
+
+        for spellId, _ in pairs(aura_env.stealthSpellIds) do
+            local data = C_UnitAuras.GetPlayerAuraBySpellID(spellId)
+            if data ~= nil then
+                aura_env.activeStealths[data['auraInstanceID']] = true
+            end
+        end
+
+        return false
     elseif event == 'UNIT_AURA' then
         -- Check if we already have a state for Rake on this unit.
 
@@ -43,14 +70,14 @@ function(allstates, event, unit, updateInfo)
         if state == nil then
             -- Check if the aura being added is Rake from the player.  If it
             -- is, then create a state for it.  Include in the state whether
-            -- 'aura_env.hasSuddenAmbush' is not 'nil'. 
+            -- any of the stealthed states is not 'nil'.
 
             if updateInfo['addedAuras'] == nil then
                 return false
             end
 
             for _, data in ipairs(updateInfo['addedAuras']) do
-                if (data['sourceUnit'] == 'player' 
+                if (data['sourceUnit'] == 'player'
                                             and data['spellId'] == 155722) then
                     allstates[unitGuid] = {
                         ['show'] = true,
@@ -66,7 +93,7 @@ function(allstates, event, unit, updateInfo)
                         ['duration'] = data['duration'],
 
                         ['auraInstanceId'] = data['auraInstanceID'],
-                        ['suddenAmbush'] = aura_env.hasSuddenAmbush and true or false,
+                        ['fromStealth'] = aura_env.isStealthed(),
                         ['isTarget'] = UnitIsUnit(unit, 'target')
                     }
 
@@ -88,13 +115,13 @@ function(allstates, event, unit, updateInfo)
                                                                 auraInstanceId)
 
                     -- The expiration time sometimes gets micro-adjusted with
-                    -- updates.  Don't update the 'suddenAmbush' value for
-                    -- these jitters.
+                    -- updates.  Don't update the 'fromStealth' value for these
+                    -- jitters.
 
                     local timeDifference = math.abs(state['expirationTime']
                                                       - data['expirationTime'])
                     if timeDifference >= 0.5 then
-                        state['suddenAmbush'] = aura_env.hasSuddenAmbush and true or false
+                        state['fromStealth'] = aura_env.isStealthed()
                     end
 
                     state['changed'] = true
@@ -186,7 +213,7 @@ function(allstates, event, unit, updateInfo)
             ['duration'] = 12,
 
             ['auraInstanceId'] = 0,
-            ['suddenAmbush'] = true,
+            ['fromStealth'] = true,
             ['isTarget'] = true
         }
     end
@@ -200,6 +227,6 @@ end
     ['duration'] = true,
 
     ['unit'] = 'string',
-    ['suddenAmbush'] = 'bool',
+    ['fromStealth'] = 'bool',
     ['isTarget'] = 'bool',
 }
