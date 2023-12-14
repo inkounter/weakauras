@@ -166,6 +166,29 @@ function(allstates, event, unit, updateInfo)
         end
 
         return changed
+    elseif event == 'OPTIONS' then
+        -- Create a dummy state to test out the display options.
+
+        local rakeSpellId = 155722
+        local name, _, icon = GetSpellInfo(rakeSpellId)
+
+        allstates['dummy'] = {
+            ['show'] = true,
+            ['changed'] = true,
+            ['progressType'] = 'timed',
+            ['autoHide'] = true,
+            ['name'] = name,
+            ['icon'] = icon,
+            ['spellId'] = rakeSpellId,
+
+            ['unit'] = 'nameplate1',
+            ['expirationTime'] = GetTime() + 12,
+            ['duration'] = 12,
+
+            ['auraInstanceId'] = 0,
+            ['suddenAmbush'] = true,
+            ['isTarget'] = true
+        }
     end
 end
 
