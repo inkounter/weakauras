@@ -1,11 +1,5 @@
---[[
-TODO:
-- make a version that is specific to 'target'
-    - update on 'PLAYER_TARGET_CHANGED'
-]]
-
 -------------------------------------------------------------------------------
--- TSU: UNIT_AURA:player, UNIT_AURA:nameplate, NAME_PLATE_UNIT_REMOVED, NAME_PLATE_UNIT_ADDED
+-- TSU: UNIT_AURA:player, UNIT_AURA:nameplate, NAME_PLATE_UNIT_REMOVED, NAME_PLATE_UNIT_ADDED, PLAYER_TARGET_CHANGED
 
 function(allstates, event, unit, updateInfo)
     if event == 'UNIT_AURA' and unit == 'player' then
@@ -72,7 +66,8 @@ function(allstates, event, unit, updateInfo)
                         ['duration'] = data['duration'],
 
                         ['auraInstanceId'] = data['auraInstanceID'],
-                        ['suddenAmbush'] = aura_env.hasSuddenAmbush and true or false
+                        ['suddenAmbush'] = aura_env.hasSuddenAmbush and true or false,
+                        ['isTarget'] = UnitIsUnit(unit, 'target')
                     }
 
                     return true
@@ -144,6 +139,33 @@ function(allstates, event, unit, updateInfo)
         state['unit'] = unit
 
         return true
+    elseif event == "PLAYER_TARGET_CHANGED" then
+        -- If the previous target has a state, clear its 'isTarget' value.
+
+        local changed = false
+
+        if aura_env.targetGuid ~= nil then
+            local state = allstates[aura_env.targetGuid]
+            if state ~= nil then
+                state['changed'] = true
+                state['isTarget'] = false
+
+                changed = true
+            end
+        end
+
+        aura_env.targetGuid = UnitGUID("target")
+        if aura_env.targetGuid ~= nil then
+            local state = allstates[aura_env.targetGuid]
+            if state ~= nil then
+                state['changed'] = true
+                state['isTarget'] = true
+
+                changed = true
+            end
+        end
+
+        return changed
     end
 end
 
@@ -156,4 +178,5 @@ end
 
     ['unit'] = 'string',
     ['suddenAmbush'] = 'bool',
+    ['isTarget'] = 'bool',
 }
