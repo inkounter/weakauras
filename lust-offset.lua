@@ -68,6 +68,9 @@ function(allstates, event, triggerNum, triggerStates)
     else
         -- The spell is not on CD.  Show the remaining duration on Sated.
 
+        state['sign'] = '+'
+        state['difference'] = state['satedDuration']
+        state['absDifference'] = state['satedDuration']
         state['paused'] = false
         state['expirationTime'] = state['satedExpiration']
         state['duration'] = state['satedDuration']
