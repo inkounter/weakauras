@@ -51,11 +51,12 @@ function(allstates, event, triggerNum, updatedTriggerStates)
             end
 
             state['stacks'] = 0
+            state['atMaxStacks'] = false
         else
             state['stacks'] = triggerState['stacks']
+            state['atMaxStacks'] = state['stacks'] == state['total']
         end
 
-        state['atMaxStacks'] = false
         state['value'] = state['stacks']
         state['changed'] = true
 
