@@ -9,13 +9,15 @@ aura_env.lgf = LibStub("LibGetFrame-1.0")
 local region = aura_env.region
 local frame = aura_env.lgf.GetFrame(aura_env.state.unit)
 
-region:ClearAllPoints()
-region:SetPoint("CENTER", frame, "CENTER")
-region:SetRegionWidth(frame:GetWidth())
-region:SetRegionHeight(frame:GetHeight())
-region:SetParent(frame)
+if frame ~= nil then
+    region:ClearAllPoints()
+    region:SetPoint("CENTER", frame, "CENTER")
+    region:SetRegionWidth(frame:GetWidth())
+    region:SetRegionHeight(frame:GetHeight())
+    region:SetParent(frame)
 
-region.bar.spark:SetHeight(frame:GetHeight() * 1.5)
+    region.bar.spark:SetHeight(frame:GetHeight() * 1.5)
+end
 
 -------------------------------------------------------------------------------
 -- trigger (TSU): TRIGGER:1
