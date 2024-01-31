@@ -18,56 +18,47 @@ region:SetParent(frame)
 region.bar.spark:SetHeight(frame:GetHeight() * 1.5)
 
 -------------------------------------------------------------------------------
--- trigger (TSU): CLEU:SPELL_AURA_APPLIED:SPELL_AURA_REMOVED
+-- trigger (TSU): TRIGGER:1
 
-function(allstates, event, ...)
-    if ... == nil then
+function(allstates, event, _, triggerStates)
+    if event ~= 'TRIGGER' then
         return false
     end
 
-    local subevent = select(2, ...)
-    local sourceGuid = select(4, ...)
-    local sourceFlags = select(6, ...)
-    local spellName = select(13, ...)
+    local changed = false
 
-    if not bit.band(sourceFlags, 0x07) or spellName ~= "Alter Time" then
-        return false
-    end
+    -- Hide expired states.
 
-    local unit = nil
-    for groupUnit in WA_IterateGroupMembers() do
-        if UnitGUID(groupUnit) == sourceGuid then
-            unit = groupUnit
-            break
+    for key, state in pairs(allstates) do
+        local triggerState = triggerStates[key]
+
+        if triggerState == nil or not triggerState['show'] then
+            state['show'] = false
+            state['changed'] = true
+
+            changed = true
         end
     end
-    if unit == nil then
-        return false
+
+    -- Add new states.
+
+    for key, trigger1State in pairs(triggerStates) do
+        local state = allstates[key]
+        if state == nil or not state['show'] then
+            local unit = trigger1State['unit']
+            state = {
+                ['show'] = true,
+                ['changed'] = true,
+                ['unit'] = unit,
+                ['progressType'] = 'static',
+                ['value'] = UnitHealth(unit),
+                ['total'] = UnitHealthMax(unit)
+            }
+
+            allstates[key] = state
+            changed = true
+        end
     end
 
-    local state = allstates[sourceGuid]
-    if subevent == "SPELL_AURA_REMOVED" then
-        if state == nil then
-            return false
-        end
-
-        state.changed = true
-        state.show = false
-
-        return true
-    else    -- subevent == "SPELL_AURA_APPLIED"
-        if state == nil then
-            state = {}
-            allstates[sourceGuid] = state
-        end
-
-        state.changed = true
-        state.show = true
-        state.progressType = "static"
-        state.value = UnitHealth(unit)
-        state.total = UnitHealthMax(unit)
-        state.unit = unit
-
-        return true
-    end
+    return changed
 end
