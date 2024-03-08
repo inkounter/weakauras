@@ -12,7 +12,7 @@ if scan == nil then
                              popupFrame.GroupName:GetText())
     end
 
-    popupFrame:SetScript("OnShow", callback)
+    popupFrame.AcceptButton:HookScript("OnClick", callback)
 end
 
 
