@@ -13,6 +13,7 @@ if scan == nil then
     end
 
     popupFrame.AcceptButton:HookScript("OnClick", callback)
+    popupFrame.AcknowledgeButton:HookScript("OnClick", callback)
 end
 
 
