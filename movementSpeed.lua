@@ -1,7 +1,13 @@
 -- trigger: every frame
 
 function()
-    return true
+    local now = GetTime()
+    if aura_env.lastTime == nil or aura_env.lastTime < now - 0.1 then
+        aura_env.lastTime = now
+        return true
+    else
+        return false
+    end
 end
 
 -- untrigger
