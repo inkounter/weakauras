@@ -1,27 +1,34 @@
--- trigger: every frame
+-- TSU: every frame
 
-function()
+function(allstates, ...)
+    local state = allstates['']
+    if state == nil then
+        state = { ['show'] = true }
+        allstates[''] = state
+    end
+
     local now = GetTime()
     if aura_env.lastTime == nil or aura_env.lastTime < now - 0.1 then
         aura_env.lastTime = now
+
+        local isGliding, _, speed = C_PlayerInfo.GetGlidingInfo()
+        if not isGliding then
+            speed = GetUnitSpeed("player")
+        end
+
+        state['changed'] = true
+        state['isGliding'] = isGliding
+        state['speed'] = speed / 7 * 100
+
         return true
     else
         return false
     end
 end
 
--- untrigger
+-- custom variables
 
-function()
-    return false
-end
-
--- name
-
-function()
-    local speed = select(3, C_PlayerInfo.GetGlidingInfo())
-    if speed == 0 then
-        speed = GetUnitSpeed("player")
-    end
-    return math.floor(speed / 7 * 100 + 0.5)
-end
+{
+  ['speed'] = 'number',
+  ['isGliding'] = 'bool'
+}
