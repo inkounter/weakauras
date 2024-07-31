@@ -1,7 +1,7 @@
 -- Show a mana bar, but add additional fields and an overlay for the cost of
 -- Arcane Blast at max Arcane Charges.
 
--- TSU: TRIGGER:1
+-- TSU: TRIGGER:1, TRAIT_TREE_CURRENCY_INFO_UPDATED, PLAYER_LEVEL_CHANGED
 
 function(allstates, event, ...)
     local state = allstates['']
