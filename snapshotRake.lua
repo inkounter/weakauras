@@ -197,7 +197,7 @@ function(allstates, event, unit, updateInfo)
         -- Create a dummy state to test out the display options.
 
         local rakeSpellId = 155722
-        local name, _, icon = GetSpellInfo(rakeSpellId)
+        local name, _, icon = C_Spell.GetSpellInfo(rakeSpellId)
 
         allstates['dummy'] = {
             ['show'] = true,

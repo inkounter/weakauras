@@ -2,7 +2,7 @@
 -- init
 
 aura_env.singleState = {
-    ["icon"] = select(3, GetSpellInfo(190456)),
+    ["icon"] = select(3, C_Spell.GetSpellInfo(190456)),
     ["progressType"] = "static",
     ["autoHide"] = not aura_env.config.alwaysShow,
     ["show"] = aura_env.config.alwaysShow
@@ -11,7 +11,7 @@ aura_env.singleState = {
 local getSpellTooltipAmount = function()
     -- Return the absorption amount listed in Ignore Pain's spell tooltip.
 
-    local amount = GetSpellDescription(190456):match("%%.+%d")
+    local amount = C_Spell.GetSpellDescription(190456):match("%%.+%d")
 
     -- On game restart, the returned description is sometimes an empty string,
     -- so the match is 'nil'.  When it is, use an arbitrary, nonzero amount.
