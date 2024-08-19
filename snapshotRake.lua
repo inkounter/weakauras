@@ -197,15 +197,15 @@ function(allstates, event, unit, updateInfo)
         -- Create a dummy state to test out the display options.
 
         local rakeSpellId = 155722
-        local name, _, icon = C_Spell.GetSpellInfo(rakeSpellId)
+        local spellInfo = C_Spell.GetSpellInfo(rakeSpellId)
 
         allstates['dummy'] = {
             ['show'] = true,
             ['changed'] = true,
             ['progressType'] = 'timed',
             ['autoHide'] = true,
-            ['name'] = name,
-            ['icon'] = icon,
+            ['name'] = spellInfo['name'],
+            ['icon'] = spellInfo['iconID'],
             ['spellId'] = rakeSpellId,
 
             ['unit'] = 'nameplate1',

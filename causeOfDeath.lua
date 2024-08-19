@@ -25,7 +25,7 @@ aura_env.getSpellText = function(spell, school)
 
     local text = nil
     if type(spell) == "number" then
-        local spellName, _ = C_Spell.GetSpellInfo(spell)
+        local spellName = C_Spell.GetSpellInfo(spell)['name']
         text = "|Hspell:" .. spell .. "|h[" .. spellName .. "]|h"
     else
         text = "[" .. spell .. "]"
