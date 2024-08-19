@@ -2,7 +2,7 @@
 -- init
 
 aura_env.singleState = {
-    ["icon"] = select(3, C_Spell.GetSpellInfo(190456)),
+    ["icon"] = C_Spell.GetSpellInfo(190456)['iconID'],
     ["progressType"] = "static",
     ["autoHide"] = not aura_env.config.alwaysShow,
     ["show"] = aura_env.config.alwaysShow
