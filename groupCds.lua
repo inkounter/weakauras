@@ -71,11 +71,11 @@ aura_env.setCooldownListForUnit = function(allstates, unitId)
             local state = allstates[cloneId]
 
             if state == nil then
-                local spellName, _, spellIcon = GetSpellInfo(spellId)
+                local spellInfo = C_Spell.GetSpellInfo(spellId)
 
                 state = {
-                    ["name"] = spellName,
-                    ["icon"] = spellIcon,
+                    ["name"] = spellInfo["name"],
+                    ["icon"] = spellInfo["iconID"],
                     ["progressType"] = "timed",
                     ["autoHide"] = false,
                     ["spellId"] = spellId,
@@ -88,6 +88,9 @@ aura_env.setCooldownListForUnit = function(allstates, unitId)
             state["changed"] = true
             state["index"] = configuredSpellPriority
             state["unit"] = unitId
+
+            local unitClass, _ = UnitClass(unitId)
+            state["classColor"] = C_ClassColor.GetClassColor(unitClass)
 
             local _, _, _, charges, _, maxValue, _, duration =
                                 libOr.GetCooldownStatusFromCooldownInfo(cdInfo)
@@ -120,6 +123,14 @@ aura_env.updateCooldownForUnit = function(allstates, unitId, spellId)
     state["duration"] = duration
 
     return true
+end
+
+-------------------------------------------------------------------------------
+-- on show
+
+local region = aura_env.region
+if region.bar and aura_env.state.classColor then
+    region:Color(aura_env.state.classColor:GetRGBA())
 end
 
 -------------------------------------------------------------------------------
@@ -177,6 +188,7 @@ end
     ["duration"] = true,
     ["stacks"] = true,
 
+    ["unit"] = "string",
     ["index"] = "number",
     ["spellId"] = "number",
 }
