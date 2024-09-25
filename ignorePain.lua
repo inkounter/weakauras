@@ -119,15 +119,14 @@ end
         -- This is an alias of 'value'.
 
     ["castAbsorb"] = "number",
-        -- The additional amount of absorption that Ignore Pain would give if
-        -- cast right now.  This is equal to the value in the Ignore Pain spell
-        -- tooltip, increased by the Never Surrender multiplier, if applicable.
+        -- The amount of absorption that Ignore Pain would give if cast right
+        -- now.  This is equal to the value in the Ignore Pain spell tooltip.
         -- Note that this value does not factor in the absorption cap.  To see
         -- how much "real" absorption would be added with the absorption cap
         -- factored in, see 'additionalAbsorbOnCast'.
 
     ["absorbCap"] = "number",
-        -- Formula: 'castAbsorb * 2'
+        -- Formula: 'UnitHealthMax("player") * 0.3'
         --
         -- The max amount of absorbtion that the player can build up right now.
         -- If 'currentAbsorb' is greater than 'absorbCap', then a re-cast would
