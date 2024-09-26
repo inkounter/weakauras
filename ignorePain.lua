@@ -8,22 +8,6 @@ aura_env.singleState = {
     ["show"] = aura_env.config.alwaysShow
 }
 
-local getSpellTooltipAmount = function()
-    -- Return the absorption amount listed in Ignore Pain's spell tooltip.
-
-    local amount = C_Spell.GetSpellDescription(190456):match("%%.+%d")
-
-    -- On game restart, the returned description is sometimes an empty string,
-    -- so the match is 'nil'.  When it is, use an arbitrary, nonzero amount.
-
-    if amount == nil then
-        return 1
-    else
-        amount = amount:gsub("%D","")
-        return tonumber(amount)
-    end
-end
-
 aura_env.calculateState = function(state)
     -- Calculate the Ignore Pain values and store the results into the
     -- specified 'state'.
@@ -41,27 +25,15 @@ aura_env.calculateState = function(state)
     state["currentAbsorb"] = currentAbsorb
     state["value"] = currentAbsorb
 
-    -- Retrieve how much absorption a new cast would give based on the tooltip
-    -- value.
-
-    local castAbsorb = getSpellTooltipAmount()
-
-    state["castAbsorb"] = castAbsorb
-
     -- Provide additional calculated values, derived from the above retrieved
     -- values.
 
     local absorbCap = UnitHealthMax("player") * 0.3
-    local additionalAbsorbOnCast = math.min(
-                                        math.max(0, absorbCap - currentAbsorb),
-                                        castAbsorb)
 
     state["absorbCap"] = absorbCap
     state["total"] = absorbCap
     state["percentOfCap"] = currentAbsorb / absorbCap * 100
     state["percentOfMaxHp"] = currentAbsorb / UnitHealthMax("player") * 100
-    state["additionalAbsorbOnCast"] = additionalAbsorbOnCast
-    state["castBenefitPercent"] = additionalAbsorbOnCast / castAbsorb * 100
 end
 
 -------------------------------------------------------------------------------
@@ -118,13 +90,6 @@ end
         --
         -- This is an alias of 'value'.
 
-    ["castAbsorb"] = "number",
-        -- The amount of absorption that Ignore Pain would give if cast right
-        -- now.  This is equal to the value in the Ignore Pain spell tooltip.
-        -- Note that this value does not factor in the absorption cap.  To see
-        -- how much "real" absorption would be added with the absorption cap
-        -- factored in, see 'additionalAbsorbOnCast'.
-
     ["absorbCap"] = "number",
         -- Formula: 'UnitHealthMax("player") * 0.3'
         --
@@ -140,18 +105,6 @@ end
 
     ["percentOfMaxHp"] = "number",
         -- Formula: 'currentAbsorb / UnitHealthMax("player") * 100'
-
-    ["additionalAbsorbOnCast"] = "number",
-        -- Formula: 'math.min(math.max(0, absorbCap - currentAbsorb), castAbsorb)'
-        --
-        -- The amount of absorption that would be added to 'currentAbsorb' if
-        -- the player were to cast Ignore Pain right now.
-
-    ["castBenefitPercent"] = "number",
-        -- Formula: 'additionalAbsorbOnCast / castAbsorb * 100'
-        --
-        -- The percentage amount of 'castAbsorb' that the player would benefit
-        -- from if he/she were to cast Ignore Pain right now.
 
     ---------------------------------------------------------------------------
     -- DEFAULT STATE VARIABLES
