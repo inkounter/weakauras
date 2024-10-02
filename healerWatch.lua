@@ -38,8 +38,12 @@ function aura_env.isDrinking(unit)
     -- 'false'.
 
     for i = 1, 40 do
-        local name, _ = C_UnitAuras.GetBuffDataByIndex(unit, i)
-        if drinkingBuffNames[name] ~= nil then
+        local buffData = C_UnitAuras.GetBuffDataByIndex(unit, i)
+        if buffData == nil then
+            return false
+        end
+
+        if drinkingBuffNames[buffData["name"]] ~= nil then
             return true
         end
     end
