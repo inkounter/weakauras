@@ -36,7 +36,9 @@ function(allstates, event, spellId)
 
     state.changed = true
     state.show = true
-    state.name, _, state.icon = GetSpellInfo(spellId)
+    local spellInfo = C_Spell.GetSpellInfo(spellId)
+    state.name = spellInfo["name"]
+    state.icon = spellInfo["iconID"]
     state.progressType = "timed"
     state.duration = math.max(0.01, aura_env.config.dwellDuration)
     state.expirationTime = GetTime() + state.duration
