@@ -40,13 +40,18 @@ function(allstates, event, triggerNum, triggerStates)
     state["changed"] = true
     state["show"] = true
 
+    -- Copy only the state variables that we use from this trigger (e.g., from
+    -- within "on show" and any others that a listener for the custom events
+    -- likely wants).
+
     for _, key in ipairs({ "name",
                            "progressType",
                            "expirationTime",
                            "duration",
                            "autoHide",
                            "castType",
-                           "interruptible" }) do
+                           "interruptible",
+                           "spellId" }) do
         state[key] = triggerState[key]
     end
 
@@ -109,13 +114,14 @@ local setColor = function(r, g, b, a)
     aura_env.region:Color(r, g, b, a)
 end
 
-if aura_env.state["customCastColor"] and aura_env.config.enableCustomColors then
-    setColor(unpack(aura_env.state["customCastColor"]))
+local state = aura_env.state
+if state["customCastColor"] and aura_env.config.enableCustomColors then
+    setColor(unpack(state["customCastColor"]))
 elseif aura_env.config.enableDefaultColors then
     local platerProfile = aura_env.Plater and aura_env.Plater and aura_env.Plater.db.profile
     if platerProfile then
-        local castType = aura_env.state["castType"]
-        local interruptible = aura_env.state["interruptible"]
+        local castType = state["castType"]
+        local interruptible = state["interruptible"]
 
         local color
         if not interruptible then
@@ -128,3 +134,17 @@ elseif aura_env.config.enableDefaultColors then
         setColor(unpack(color))
     end
 end
+
+WeakAuras.ScanEvents("INK_FOCUS_CAST_START",
+                     state,
+                     state["customCastColor"] or nil,
+                     state["customSpellName"] or nil)
+
+-------------------------------------------------------------------------------
+-- show
+
+local state = aura_env.state
+WeakAuras.ScanEvents("INK_FOCUS_CAST_STOP",
+                     state,
+                     state["customCastColor"] or nil,
+                     state["customSpellName"] or nil)
