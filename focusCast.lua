@@ -3,19 +3,7 @@
 
 --[[
 TODO:
-    - add custom options to disable each of the features (rename, custom color,
-      default color)
-    - test that conditions don't override the color:
-        1. disable default plater coloring
-        2. add condition to color the cast differently for cast vs. channel
-        3. check that a cast without a custom Plater color is colored according
-           to the conditions
-        4. check that a cast with a custom Plater color is colored according to
-           Plater
-    - make a TSU for elegance
-        - renaming the spell is more conventional
-        - the state can contain a variable that indicates whether the thing is
-          renamed or recolored
+    - on show and on hide, also fire a custom event
 ]]
 
 -------------------------------------------------------------------------------
@@ -24,58 +12,119 @@ TODO:
 aura_env.Plater = _G["Plater"]
 
 -------------------------------------------------------------------------------
+-- TSU: TRIGGER:1
+
+function(allstates, event, triggerNum, triggerStates)
+    if event ~= "TRIGGER" then
+        return false
+    end
+
+    local state = allstates[""]
+    local triggerState = triggerStates[""]
+    if triggerState == nil then
+        if state ~= nil then
+            state["show"] = false
+            state["changed"] = false
+
+            return true
+        elseif state == nil then
+            return false
+        end
+    end
+
+    if state == nil then
+        state = {}
+        allstates[""] = state
+    end
+
+    state["changed"] = true
+    state["show"] = true
+
+    for _, key in ipairs({ "name",
+                           "progressType",
+                           "expirationTime",
+                           "duration",
+                           "autoHide",
+                           "castType",
+                           "interruptible" }) do
+        state[key] = triggerState[key]
+    end
+
+    state["hasCustomSpellName"] = false
+    state["hasCustomCastColor"] = false
+
+    local platerProfile = aura_env.Plater and aura_env.Plater and aura_env.Plater.db.profile
+    if platerProfile then
+        -- Apply the custom cast color, if any.
+
+        local customColors = platerProfile.cast_colors
+        if customColors ~= nil then
+            local customColor = customColors[triggerState["spellId"]]
+            if customColor ~= nil then
+                local enabled, color, customSpellName = customColor[1], customColor[2], customColor[3]
+                if enabled and color then
+                    if customSpellName ~= nil and customSpellName ~= "" then
+                        -- This cast also has a custom name.  Set it.
+
+                        state["hasCustomSpellName"] = true
+                        state["customSpellName"] = customSpellName
+                        if aura_env.config.enableCustomSpellNames then
+                            state["name"] = customSpellName
+                            state["spellName"] = customSpellName
+                        end
+                    end
+
+                    -- Note that Details uses "white" as a sentinel color for
+                    -- disablement.
+
+                    if color ~= "white" then
+                        state["hasCustomCastColor"] = true
+                        state["customCastColor"] = {
+                                           aura_env.Plater:ParseColors(color) }
+                    end
+                end
+            end
+        end
+    end
+
+    return true
+end
+
+-------------------------------------------------------------------------------
+-- custom variables
+
+{
+    ["expirationTime"] = true,
+    ["duration"] = true,
+
+    ["hasCustomCastColor"] = "bool",
+    ["hasCustomSpellName"] = "bool",
+    ["customSpellName"] = "string",
+}
+
+-------------------------------------------------------------------------------
 -- show
 
 local setColor = function(r, g, b, a)
     aura_env.region:Color(r, g, b, a)
 end
 
-local platerProfile = aura_env.Plater and aura_env.Plater and aura_env.Plater.db.profile
-if platerProfile then
-    -- Apply the custom cast color, if any.
+if aura_env.state["customCastColor"] and aura_env.config.enableCustomColors then
+    setColor(unpack(aura_env.state["customCastColor"]))
+elseif aura_env.config.enableDefaultColors then
+    local platerProfile = aura_env.Plater and aura_env.Plater and aura_env.Plater.db.profile
+    if platerProfile then
+        local castType = aura_env.state["castType"]
+        local interruptible = aura_env.state["interruptible"]
 
-    local customColors = platerProfile.cast_colors
-    if customColors ~= nil then
-        local spellId = aura_env.state["spellId"]
-        local customColor = customColors[spellId]
-        if customColor ~= nil then
-            local enabled, color, customSpellName = customColor[1], customColor[2], customColor[3]
-            if enabled and color then
-                if customSpellName ~= nil and customSpellName ~= "" then
-                    -- This cast also has a custom name.  Set it.
-
-                    -- TODO: Test this. This probably doesn't work in `on
-                    -- show`.
-
-                    aura_env.state["spellName"] = customSpellName
-                end
-
-                -- Note that Details uses "white" as a sentinel color for
-                -- disablement.
-
-                if color ~= "white" then
-                    setColor(aura_env.Plater:ParseColors(color))
-
-                    -- Skip setting the default cast color.
-
-                    return
-                end
-            end
+        local color
+        if not interruptible then
+            color = platerProfile.cast_statusbar_color_nointerrupt
+        elseif castType == "channel" then
+            color = platerProfile.cast_statusbar_color_channeling
+        else
+            color = platerProfile.cast_statusbar_color
         end
+        setColor(unpack(color))
     end
-
-    -- Use the default Plater cast color.
-
-    local castType = aura_env.state["castType"]
-    local interruptible = aura_env.state["interruptible"]
-
-    local color
-    if not interruptible then
-        color = platerProfile.cast_statusbar_color_nointerrupt
-    elseif castType == "channel" then
-        color = platerProfile.cast_statusbar_color_channeling
-    else
-        color = platerProfile.cast_statusbar_color
-    end
-    setColor(unpack(color))
 end
