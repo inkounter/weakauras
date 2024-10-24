@@ -2,7 +2,8 @@
 -- init
 
 aura_env.stanceResponses = { [1] = { "roar" },                  -- bear
-                             [2] = { "hiss", "meow", "purr" } } -- cat
+                             [2] = { "hiss", "meow", "purr" },  -- cat
+                             [4] = { "cuddle" } }          -- boomkin (usually)
 
 -------------------------------------------------------------------------------
 -- TSU: CHAT_MSG_TEXT_EMOTE
@@ -14,9 +15,8 @@ function(allstates, event, message, senderName)
 
     local fullSenderName
 
-    local pattern = " pets you.$"
-    if message:match(pattern) then
-        fullSenderName = message:gsub(pattern, "")
+    if message:match(" pets you.$") or message:match("gently pats you.$") then
+        fullSenderName = message:match("^([^ ]+)")
     else
         return false
     end
