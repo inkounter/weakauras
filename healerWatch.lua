@@ -30,7 +30,8 @@ end
 local drinkingBuffNames = {
     ["Food & Drink"] = true,
     ["Drink"] = true,
-    ["Refreshment"] = true
+    ["Refreshment"] = true,
+    ["Quiet Contemplation"] = true,
 }
 
 function aura_env.isDrinking(unit)
