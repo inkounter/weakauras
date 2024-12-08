@@ -9,9 +9,10 @@ aura_env.spenders ={
     [117014] = true, -- Elemental Blast
     [188196] = true, -- Lightning Bolt
     [452201] = true, -- Tempest
-    [320674] = true -- Chain Harvest
+    [115356] = true, -- Windstrike
 }
 
+aura_env.hasThorimsInvocation = false
 aura_env.maxStackConsumption = 5
 aura_env.currentStacks = 0
 
@@ -20,7 +21,7 @@ if aura_env.saved == nil then
 end
 
 -------------------------------------------------------------------------------
--- TSU: TRIGGER:2:3, UNIT_SPELLCAST_SUCCEEDED:player, PLAYER_ENTERING_WORLD
+-- TSU: TRIGGER:2:3:4, UNIT_SPELLCAST_SUCCEEDED:player, PLAYER_ENTERING_WORLD
 
 function(allstates, event, ...)
     local state = allstates[""]
@@ -66,9 +67,28 @@ function(allstates, event, ...)
             return false
         end
 
-        local progressValue = state["value"] +
-                                         math.min(aura_env.currentStacks,
-                                                  aura_env.maxStackConsumption)
+        local addedProgress = math.min(aura_env.currentStacks,
+                                       aura_env.maxStackConsumption)
+
+        if spellId == 115356 then
+            if aura_env.hasThorimsInvocation then
+                -- When we cast Windstrike with Thorim's Invocation, the game
+                -- also fires a simultaneous "UNIT_SPELLCAST_SUCCEEDED" event
+                -- for Lightning Bolt as well.  When we see Windstrike, adjust
+                -- the progress value to negate the handling of the
+                -- simultaneous Lightning Bolt cast.
+
+                addedProgress = math.min(aura_env.currentStacks, 5) -
+                                                                  addedProgress
+            else
+                -- We just cast Windstrike, but it doesn't contribute directly
+                -- to Tempest stacks.
+
+                return false
+            end
+        end
+
+        local progressValue = state["value"] + addedProgress
         if progressValue >= 40 then
             progressValue = progressValue - 40
         end
@@ -91,6 +111,16 @@ function(allstates, event, ...)
                 aura_env.maxStackConsumption = 10
             else
                 aura_env.maxStackConsumption = 5
+            end
+
+            return false
+        elseif triggerNum == 4 then
+            -- Trigger 4 tells us whether "Thorim's Invocation" is talented.
+
+            if triggerStates[""] ~= nil then
+                aura_env.hasThorimsInvocation = true
+            else
+                aura_env.hasThorimsInvocation = false
             end
 
             return false
