@@ -53,7 +53,9 @@ function(allstates, event, triggerNum, triggerStates)
     if triggerNum == 2 then     -- Painbringer
         local triggerState = triggerStates[""]
         local newStacks = triggerState and triggerState.stacks or 0
+        local changed = false
         for i = aura_env.painbringerStacks + 1, newStacks do
+            changed = true
             local key = "painbringer " .. i .. " " .. GetTime()
             allstates[key] = {
                 ["show"] = true,
@@ -68,7 +70,7 @@ function(allstates, event, triggerNum, triggerStates)
 
         aura_env.painbringerStacks = newStacks
 
-        return aura_env.painbringerStacks < newStacks
+        return changed
     end
 
     if triggerNum == 3 and aura_env.hasVoidReaver then  -- Frailty
