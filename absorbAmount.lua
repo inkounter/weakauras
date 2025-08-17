@@ -8,6 +8,9 @@ function(allstates, event, triggerNum, triggerStates)
     -- Reuse the same state table.
 
     local state = triggerStates[""]
+    if state == nil then
+        return false
+    end
     allstates[""] = state
     state["changed"] = true
     state["absorbPercent"] = state["absorb"] / state["maxhealth"] * 100
